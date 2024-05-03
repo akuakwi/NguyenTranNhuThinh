@@ -1,0 +1,16 @@
+from ._anvil_designer import Bai3ClientTemplate
+from anvil import *
+import anvil.server
+
+
+class Bai3Client(Bai3ClientTemplate):
+  def __init__(self, **properties):
+    # Set Form properties and Data Bindings.
+    self.init_components(**properties)
+
+    # Any code you write here will run before the form opens.
+  
+  def ThucHien_click(self, **event_args):
+    self.KetQua.text = anvil.server.call('sort_numbers',self.DaySoN.text)
+    self.KetQuaGiamDan.text = anvil.server.call('sort_numbers_des',self.DaySoN.text)
+        
