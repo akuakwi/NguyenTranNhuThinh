@@ -1,0 +1,39 @@
+from ._anvil_designer import ipaddressTemplate
+from anvil import *
+import anvil.server
+
+class ipaddress(ipaddressTemplate):
+  def __init__(self, **properties):
+    # Set Form properties and Data Bindings.
+    self.init_components(**properties)
+    # Any code you write here will run before the form opens.
+  def button_thuchien_click(self, **event_args):
+    ip = self.text_box_dia_chi_ip.text
+    num_subnets = self.text_box_so_luong_mang_con.text
+    CIDR = self.CIDR.selected_value
+    CIDR = CIDR[1:]
+    try:
+        results = anvil.server.call('chia_mang_con', ip, num_subnets, CIDR)
+        # Update labels with the results
+        #if(results.length < 100):
+          #raise ValueError('haha')
+        ketqua = ""
+        cacbuoc = ""
+        for result in results:
+          for step in result['steps']:
+                  cacbuoc += f"{step}\n"
+          break
+        for result in results:
+            ketqua += f"***MẠNG CON {result['mang_con']}:\n"
+            ketqua += f" Địa chỉ mạng: {result['dia_chi_mang']}\n"
+            ketqua += f" Địa chỉ host đầu tiên: {result['dia_chi_ip_dau_tien']}\n"
+            ketqua += f" Địa chỉ host cuối: {result['dia_chi_ip_cuoi_cung']}\n"
+            ketqua += f" Địa chỉ broadcast: {result['dia_chi_broadcast']}\n"
+            ketqua += f" Subnet mask: {result['subnet_mask']}\n"
+        self.label_result.text = ketqua
+        self.label_cacbuoc.text = cacbuoc
+    except Exception as e:
+        # Handle errors by updating labels with error message
+        self.label_cacbuoc.text = ""
+        self.label_result.text = f"Error: {str(results)}"
+
