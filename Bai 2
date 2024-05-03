@@ -1,0 +1,38 @@
+#include <stdio.h>
+#include <math.h>
+
+int KiemTraSoChinhPhuong(int n) {
+    int sqrt_n = sqrt(n);
+    return (sqrt_n * sqrt_n == n);
+}
+
+int DemSoChinhPhuong(int n) {
+    int count = 0;
+    for (int i = 1; i < n; i++) {
+        if (KiemTraSoChinhPhuong(i)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int main() {
+    int n;
+    printf("Nhập vào số nguyên dương n: ");
+    scanf("%d", &n);
+
+    // In 
+    printf("Các số chính phương nhỏ hơn %d là: ", n);
+    for (int i = 1; i < n; i++) {
+        if (KiemTraSoChinhPhuong(i)) {
+            printf("%d ", i);
+        }
+    }
+    printf("\n");
+
+    // Đếm 
+    int count = DemSoChinhPhuong(n);
+    printf("Đếm số chính phương nhỏ hơn %d: %d.\n", n,count);
+
+    return 0;
+}
