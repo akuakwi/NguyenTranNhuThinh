@@ -1,0 +1,86 @@
+import anvil.server
+import ipaddress
+import math
+@anvil.server.callable
+def chia_mang_con(ip, num_subnets,CIDR):
+    try:
+      # Kiểm tra IP Address hợp lệ
+        ipaddress.IPv4Address(ip)
+      # Kiểm tra đầu vào phải là số
+        if num_subnets.isdigit():
+          pass
+        else: 
+          raise ValueError("Vui lòng nhập số!")
+        num_subnets = int(num_subnets)
+        if num_subnets <= 0:
+            raise ValueError("Số lượng mạng con phải là một số nguyên dương.")
+      # Kiểm tra subnet mask đúng
+        CIDR = int(CIDR)
+        byte = ip.split('.')
+        byte1 = int(byte[0])
+        if (byte1 >= 128 and byte1 <= 191 and CIDR < 16 ):
+          raise ValueError("Vui lòng chọn Subnet Mask đúng!")
+        if(byte1>= 192 and byte1 <= 223 and CIDR < 24):
+          raise ValueError("Vui lòng chọn Subnet Mask đúng!")
+        ip_old = ip
+        lop = 'A'
+        if (byte1 >= 128 and byte1 <= 191 ):
+          lop = 'B'
+        if(byte1>= 192 and byte1 <= 223):
+          lop = 'C'
+      # Bước 1: Tính số lượng bit cần để biểu diễn số lượng mạng con
+        subnet_bits = math.log(num_subnets,2)
+        subnet_bits = math.ceil(subnet_bits)
+      # Bước 2: Tính số lượng bit còn lại cho host
+        if(CIDR >= 24 and CIDR < 32):
+          host_bits = 8 - (CIDR%8) - subnet_bits
+        if(CIDR >= 16 and CIDR < 24):
+          host_bits = 16 - (CIDR%8) - subnet_bits
+        if(CIDR >= 8 and CIDR < 16):
+          host_bits = 24 - (CIDR%8) -subnet_bits
+      # Bước 3: Kiểm tra số lượng mạng con hợp lệ
+        subnet_mask_old = str(ipaddress.IPv4Network('0.0.0.0/' + str(CIDR)).netmask)
+        ip = find_network_address(ip, subnet_mask_old)
+        if num_subnets >= 2**(32 - ipaddress.IPv4Network(ip+'/'+str(CIDR + subnet_bits)).prefixlen):
+            raise ValueError("Số lượng mạng con vượt quá giới hạn của một địa chỉ IP.")
+      # Bước 4: Tính subnet mask mới
+        subnet_mask = str(ipaddress.IPv4Network('0.0.0.0/' + str(CIDR +subnet_bits)).netmask)
+        # Bước 5: Chia địa chỉ IP ban đầu thành các mạng con
+        base_network = ipaddress.IPv4Network(f'{ip}/'+str(CIDR))
+        subnets = list(base_network.subnets(new_prefix=subnet_bits + base_network.prefixlen))
+        # Bước 6: Tìm địa chỉ IP, subnet mask và số lượng host tối đa cho mỗi mạng con
+        results = []
+        for i, subnet in enumerate(subnets):
+            result = {
+                "mang_con": i + 1,
+            		"dia_chi_mang": str(subnet.network_address),
+            		"dia_chi_broadcast": str(subnet.broadcast_address),
+            		"subnet_mask": str(subnet_mask),
+                "dia_chi_ip_dau_tien": str(subnet.network_address + 1),
+                "dia_chi_ip_cuoi_cung": str(subnet.broadcast_address - 1),
+                "steps": [
+                    " INPUT: {} / {}".format(ip_old, subnet_mask_old),
+                    " + Bước 1: Xác định lớp mạng\n\t\tLớp {}".format(lop),
+                    " + Bước 2: Xác định địa chỉ mạng\n\t\t{} / {}".format(ip,subnet_mask_old),
+                    " + Bước 3: Tính số lượng bit cần để biểu diễn số lượng mạng con\n\t\tlog2({}) = {}".format(num_subnets, subnet_bits),
+                    " + Bước 4: Tính số lượng bit mạng mới\n\t\t{} + {} = {} ~ {}".format(CIDR,subnet_bits,CIDR +subnet_bits,subnet_mask),
+                    " + Bước 5: Tính số lượng bit host mới\n\t\t{} - {} = {}".format(32,CIDR +subnet_bits, host_bits),
+                    " + Bước 6: Số lượng host cho mỗi mạng con\n\t\t(2^{}) - 2 = {}".format(host_bits,subnet.num_addresses-2)
+                ]
+            }
+            results.append(result)
+        return results
+    except Exception as e:
+        return str(e)
+
+def find_network_address(ip_address, subnet_mask):
+    # Chuyển đổi IP và subnet mask sang dạng số nguyên
+    ip_parts = [int(part) for part in ip_address.split('.')]
+    subnet_parts = [int(part) for part in subnet_mask.split('.')]
+
+    # Thực hiện bitwise AND giữa IP và subnet mask
+    network_address_parts = [ip_parts[i] & subnet_parts[i] for i in range(4)]
+
+    # Chuyển đổi kết quả thành địa chỉ IP
+    network_address = '.'.join(map(str, network_address_parts))
+    return network_address
